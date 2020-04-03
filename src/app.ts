@@ -40,6 +40,6 @@ class App {
   }
 }
 
-const parser = new MovieListParser()
+const parser = MovieListParser.getInstance()
 const app = new App(MOVIE_LIST, parser)
 app.initProcess()

@@ -12,6 +12,22 @@ interface MovieSimpleItem {
 }
 
 export default class MovieListParser implements Parser {
+  private static instance: MovieListParser
+  private constructor() { }
+
+  public static getInstance() {
+    if (!MovieListParser.instance) {
+      MovieListParser.instance = new MovieListParser()
+    }
+    return MovieListParser.instance
+  }
+
+  public parse(html: string, filePath: string): string {
+    const listInfo = this.getMovieListInfo(html)
+    const res = this.generateJsonContent(listInfo, filePath)
+    return JSON.stringify(res)
+  }
+
   private getMovieListInfo(html: string) {
     const movieSimpleList: MovieSimpleItem[] = []
     const $ = cheerio.load(html)
@@ -54,11 +70,5 @@ export default class MovieListParser implements Parser {
     // fileContent = [...fileContent, ...info]
     fileContent = info
     return fileContent
-  }
-
-  public parse(html: string, filePath: string): string {
-    const listInfo = this.getMovieListInfo(html)
-    const res = this.generateJsonContent(listInfo, filePath)
-    return JSON.stringify(res)
   }
 }
