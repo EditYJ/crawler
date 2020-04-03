@@ -1,62 +1,45 @@
-import cheerio from 'cheerio'
+import fs from 'fs'
+import path from 'path'
 import request from './util/request'
 
-import { BASE_URL, MOVIE_LIST } from './const/index'
+import { MOVIE_LIST } from './const/index'
+import MovieListParser from './parser/movieHeaven/movieListParser'
 
-interface MovieSimpleItem {
-  title: string
-  url: string | undefined
-  clickNum: number
-  createDate: number
+export interface Parser {
+  parse: (html: string, filePath: string) => string
 }
 
 class App {
-  constructor() {
-    this.initProcess()
+  private filePath = path.resolve(__dirname, '../data/movieList.json')
+
+  constructor(private url: string, private parser: Parser) {
   }
 
   async initProcess() {
-    const htmlRow = await this.getRowHtml()
-    const movieListRes = this.getMovieListInfo(htmlRow)
-    this.saveInfo(movieListRes)
+    try {
+      // 获取网页信息
+      const htmlRow = await this.getRowHtml()
+      // 解析器解析
+      const jsonContent = this.parser.parse(htmlRow, this.filePath)
+      // 保存信息
+      this.writeFile(jsonContent)
+    } catch (error) {
+      console.log(error)
+    }
   }
 
-  async getRowHtml() {
-    const html = await request(MOVIE_LIST)
+  // 获取网页初始信息
+  private async getRowHtml() {
+    const html = await request(this.url)
     return html.text
   }
 
-  getMovieListInfo(html: string) {
-    const movieSimpleList: MovieSimpleItem[] = []
-    const $ = cheerio.load(html)
-
-    const fileInfoItems = $('.tbspan')
-
-    fileInfoItems.map((_, item) => {
-      const reg = /《(.+)》/
-      const title = $(item).find('.ulink')
-
-      const titleText = reg.exec(title.text())![1]
-      const titleLink = `${BASE_URL}${title.attr('href')}`
-
-      const dateAndClick = $(item).find('font').text()
-      const clickNum = dateAndClick.split('：')[2].trim()
-      const writeDate = dateAndClick.split('：')[1].split('\n')[0].trim()
-
-      movieSimpleList.push({
-        title: titleText,
-        url: titleLink,
-        clickNum: parseInt(clickNum),
-        createDate: new Date(writeDate).getTime()
-      })
-    })
-
-    return movieSimpleList
-  }
-
-  saveInfo(info: MovieSimpleItem[]) {
-    console.log(JSON.stringify(info))
+  // 写文件
+  private writeFile(content: string) {
+    fs.writeFileSync(this.filePath, content)
   }
 }
 
-const app = new App()
+const parser = new MovieListParser()
+const app = new App(MOVIE_LIST, parser)
+app.initProcess()

@@ -1,4 +1,3 @@
-import superagentt from 'superagent'
 const charset = require('superagent-charset');
 const superagent = charset(require('superagent'));
 
